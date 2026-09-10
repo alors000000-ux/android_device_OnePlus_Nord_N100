@@ -72,11 +72,11 @@ jobs:
           cat > .repo/local_manifests/be2013.xml <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <remote name="github" fetch="https://github.com/" />
+            <remote name="twrp-github" fetch="https://github.com/" />
             <remove-project name="platform/bootable/recovery" />
-            <project name="TeamWin/android_bootable_recovery" path="bootable/recovery" remote="github" revision="android-11" clone-depth="1" />
-            <project name="TeamWin/android_vendor_twrp" path="vendor/twrp" remote="github" revision="android-11" clone-depth="1" />
-            <project name="${{ github.repository }}" path="device/oneplus/OnePlusN100" remote="github" revision="${{ github.sha }}" clone-depth="1" />
+            <project name="TeamWin/android_bootable_recovery" path="bootable/recovery" remote="twrp-github" revision="android-11" clone-depth="1" />
+            <project name="TeamWin/android_vendor_twrp" path="vendor/twrp" remote="twrp-github" revision="android-11" clone-depth="1" />
+            <project name="${{ github.repository }}" path="device/oneplus/OnePlusN100" remote="twrp-github" revision="${{ github.sha }}" clone-depth="1" />
           </manifest>
           EOF
           repo sync -c --no-clone-bundle --no-tags -j2
