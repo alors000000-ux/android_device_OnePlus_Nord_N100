@@ -2,6 +2,9 @@ name: Build BE2013 TWRP (Android 11 FBE)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
