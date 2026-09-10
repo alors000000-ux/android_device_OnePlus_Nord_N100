@@ -52,7 +52,6 @@ TARGET_COPY_OUT_PRODUCT := product
 
 # A/B
 AB_OTA_UPDATER := true
-PRODUCT_USE_DYNAMIC_PARTITIONS := true
 BOARD_USES_METADATA_PARTITION := true
 # This device has no separate recovery partition. TWRP lives in a boot-image
 # ramdisk and must be built with `mka bootimage`, not `mka recoveryimage`.
