@@ -73,7 +73,7 @@ jobs:
             --manifest-branch twrp-11
           git -C .repo/manifests checkout --detach 48a1ac925fb112f09cfa6313932726b20125170d
           # The pinned manifest replaces AOSP recovery with the matching TeamWin tree below.
-          sed -i '\\|path="bootable/recovery"|d' .repo/manifests/default.xml
+          sed -i '\|path="bootable/recovery"|d' .repo/manifests/default.xml
           repo sync --no-manifest-update -c --no-clone-bundle --no-tags -j2
           mkdir -p bootable/recovery
           git -C bootable/recovery init
