@@ -16,6 +16,17 @@ TARGET_CMDLINE = (
     "service_locator.enable=1 swiotlb=2048 loop.max_part=7 buildvariant=user"
 )
 
+# These values are read from the verified BE83BA stock boot header.  Keeping
+# them exact prevents a recovery image built with a different mkbootimg layout
+# from reaching the bootloader and then resetting before recovery starts.
+TARGET_KERNEL_ADDR = 0x00008000
+TARGET_RAMDISK_ADDR = 0x01000000
+TARGET_SECOND_ADDR = 0x00000000
+TARGET_TAGS_ADDR = 0x00000100
+TARGET_HEADER_SIZE = 1660
+TARGET_DTB_ADDR = 0x01F00000
+TARGET_OS_VERSION = 0x16000164
+
 
 def align(value: int, page_size: int) -> int:
     return (value + page_size - 1) // page_size * page_size
@@ -41,15 +52,34 @@ def main() -> None:
     if image[:8] != b"ANDROID!":
         abort("output lacks Android boot magic")
     kernel_size = struct.unpack_from("<I", image, 8)[0]
+    kernel_addr = struct.unpack_from("<I", image, 12)[0]
     ramdisk_size = struct.unpack_from("<I", image, 16)[0]
+    ramdisk_addr = struct.unpack_from("<I", image, 20)[0]
     second_size = struct.unpack_from("<I", image, 24)[0]
+    second_addr = struct.unpack_from("<I", image, 28)[0]
+    tags_addr = struct.unpack_from("<I", image, 32)[0]
     page_size = struct.unpack_from("<I", image, 36)[0]
     header_version = struct.unpack_from("<I", image, 40)[0]
+    os_version = struct.unpack_from("<I", image, 44)[0]
     recovery_dtbo_size = struct.unpack_from("<I", image, 1632)[0]
+    header_size = struct.unpack_from("<I", image, 1644)[0]
     dtb_size = struct.unpack_from("<I", image, 1648)[0]
+    dtb_addr = struct.unpack_from("<Q", image, 1652)[0]
     command_line = image[64 : 64 + 1536].split(b"\0", 1)[0].decode("ascii")
-    if header_version != 2 or page_size != 4096:
-        abort("output is not a 4 KiB Android boot-header v2 image")
+    header_values = {
+        "kernel_addr": kernel_addr == TARGET_KERNEL_ADDR,
+        "ramdisk_addr": ramdisk_addr == TARGET_RAMDISK_ADDR,
+        "second_addr": second_addr == TARGET_SECOND_ADDR,
+        "tags_addr": tags_addr == TARGET_TAGS_ADDR,
+        "page_size": page_size == 4096,
+        "header_version": header_version == 2,
+        "header_size": header_size == TARGET_HEADER_SIZE,
+        "dtb_addr": dtb_addr == TARGET_DTB_ADDR,
+        "os_version": os_version == TARGET_OS_VERSION,
+    }
+    bad_header = [name for name, passed in header_values.items() if not passed]
+    if bad_header:
+        abort("output boot header differs from verified stock: " + ", ".join(bad_header))
     if second_size or recovery_dtbo_size:
         abort("output unexpectedly embeds second stage or recovery DTBO")
     if len(image) > 100_663_296:
@@ -78,6 +108,12 @@ def main() -> None:
                 "format=Android boot v2 / 4096-byte pages",
                 f"boot_size={len(image)}",
                 f"boot_sha256={sha256(image)}",
+                f"kernel_addr=0x{kernel_addr:08x}",
+                f"ramdisk_addr=0x{ramdisk_addr:08x}",
+                f"tags_addr=0x{tags_addr:08x}",
+                f"dtb_addr=0x{dtb_addr:016x}",
+                f"header_size={header_size}",
+                f"os_version=0x{os_version:08x}",
                 f"kernel_sha256={sha256(kernel)}",
                 f"dtb_sha256={sha256(dtb)}",
                 f"ramdisk_size={ramdisk_size}",

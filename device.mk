@@ -18,10 +18,19 @@
 
 LOCAL_PATH := device/oneplus/OnePlusN100
 
+PRODUCT_PLATFORM := bengal
+
 # A/B
 AB_OTA_PARTITIONS += \
     boot \
+    dtbo \
+    odm \
+    product \
+    recovery \
     system \
+    system_ext \
+    vbmeta \
+    vbmeta_system \
     vendor
 
 AB_OTA_POSTINSTALL_CONFIG += \
@@ -33,10 +42,14 @@ AB_OTA_POSTINSTALL_CONFIG += \
 # Boot control HAL
 PRODUCT_PACKAGES += \
     android.hardware.boot@1.0-impl \
-    android.hardware.boot@1.0-service
+    android.hardware.boot@1.0-service \
+    android.hardware.boot@1.0-impl-wrapper.recovery \
+    android.hardware.boot@1.0-impl-wrapper \
+    android.hardware.boot@1.0-impl.recovery
 
 PRODUCT_PACKAGES += \
-    bootctrl.bengal
+    bootctrl.$(PRODUCT_PLATFORM) \
+    bootctrl.$(PRODUCT_PLATFORM).recovery
 
 PRODUCT_PACKAGES += \
     otapreopt_script \
@@ -44,3 +57,15 @@ PRODUCT_PACKAGES += \
     update_engine \
     update_verifier \
     update_engine_sideload
+
+PRODUCT_USE_DYNAMIC_PARTITIONS := true
+
+# Recovery fastboot and property tools.
+PRODUCT_PACKAGES += \
+    android.hardware.fastboot@1.0-impl-mock \
+    fastbootd \
+    resetprop
+
+PRODUCT_HOST_PACKAGES += libandroidicu
+PRODUCT_SOONG_NAMESPACES += $(LOCAL_PATH)
+PRODUCT_PACKAGES_ENG += tzdata_twrp

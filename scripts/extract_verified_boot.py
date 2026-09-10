@@ -23,6 +23,13 @@ TARGET_CMDLINE = (
     "service_locator.enable=1 swiotlb=2048 loop.max_part=7 buildvariant=user"
 )
 
+TARGET_KERNEL_ADDR = 0x00008000
+TARGET_RAMDISK_ADDR = 0x01000000
+TARGET_SECOND_ADDR = 0x00000000
+TARGET_TAGS_ADDR = 0x00000100
+TARGET_DTB_ADDR = 0x01F00000
+TARGET_OS_VERSION = 0x16000164
+
 
 def align(value: int, page_size: int) -> int:
     return (value + page_size - 1) // page_size * page_size
@@ -46,24 +53,36 @@ def main() -> None:
         abort("not the expected Android boot image")
 
     kernel_size = struct.unpack_from("<I", image, 8)[0]
+    kernel_addr = struct.unpack_from("<I", image, 12)[0]
     ramdisk_size = struct.unpack_from("<I", image, 16)[0]
+    ramdisk_addr = struct.unpack_from("<I", image, 20)[0]
     second_size = struct.unpack_from("<I", image, 24)[0]
+    second_addr = struct.unpack_from("<I", image, 28)[0]
+    tags_addr = struct.unpack_from("<I", image, 32)[0]
     page_size = struct.unpack_from("<I", image, 36)[0]
     header_version = struct.unpack_from("<I", image, 40)[0]
+    os_version = struct.unpack_from("<I", image, 44)[0]
     recovery_dtbo_size = struct.unpack_from("<I", image, 1632)[0]
     header_size = struct.unpack_from("<I", image, 1644)[0]
     dtb_size = struct.unpack_from("<I", image, 1648)[0]
+    dtb_addr = struct.unpack_from("<Q", image, 1652)[0]
     command_line = image[64 : 64 + 1536].split(b"\0", 1)[0].decode("ascii")
 
     expected = {
         "kernel_size": kernel_size == 15_745_320,
+        "kernel_addr": kernel_addr == TARGET_KERNEL_ADDR,
         "ramdisk_size": ramdisk_size == 872_568,
+        "ramdisk_addr": ramdisk_addr == TARGET_RAMDISK_ADDR,
         "second_size": second_size == 0,
+        "second_addr": second_addr == TARGET_SECOND_ADDR,
+        "tags_addr": tags_addr == TARGET_TAGS_ADDR,
         "page_size": page_size == 4096,
         "header_version": header_version == 2,
+        "os_version": os_version == TARGET_OS_VERSION,
         "recovery_dtbo_size": recovery_dtbo_size == 0,
         "header_size": header_size == 1660,
         "dtb_size": dtb_size == 328_855,
+        "dtb_addr": dtb_addr == TARGET_DTB_ADDR,
         "command_line": command_line == TARGET_CMDLINE,
     }
     failures = [name for name, passed in expected.items() if not passed]
@@ -95,6 +114,12 @@ def main() -> None:
                 f"boot_sha256={digest}",
                 f"header_version={header_version}",
                 f"page_size={page_size}",
+                f"kernel_addr=0x{kernel_addr:08x}",
+                f"ramdisk_addr=0x{ramdisk_addr:08x}",
+                f"second_addr=0x{second_addr:08x}",
+                f"tags_addr=0x{tags_addr:08x}",
+                f"dtb_addr=0x{dtb_addr:016x}",
+                f"os_version=0x{os_version:08x}",
                 f"kernel_size={kernel_size}",
                 f"kernel_sha256={hashlib.sha256(kernel).hexdigest()}",
                 f"dtb_size={dtb_size}",

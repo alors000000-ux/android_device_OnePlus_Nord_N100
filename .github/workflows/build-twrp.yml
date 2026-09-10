@@ -117,6 +117,9 @@ jobs:
             prebuilt/target/Image.gz \
             prebuilt/target/dtb.img \
             ci/boot-abi-verification.txt
+          python3 scripts/verify_twrp_ramdisk.py \
+            ci/twrp-3.x-BE2013-11.0.5-BE83BA.img \
+            ci/ramdisk-verification.txt
           sha256sum ci/twrp-3.x-BE2013-11.0.5-BE83BA.img > ci/SHA256SUMS
 
       - name: Upload bootable TWRP candidate and verification evidence
