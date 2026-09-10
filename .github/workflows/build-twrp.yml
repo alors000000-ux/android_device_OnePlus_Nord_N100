@@ -73,7 +73,6 @@ jobs:
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
             <remote name="twrp-github" fetch="https://github.com/" />
-            <remove-project name="platform/bootable/recovery" />
             <project name="TeamWin/android_bootable_recovery" path="bootable/recovery" remote="twrp-github" revision="android-11" clone-depth="1" />
             <project name="TeamWin/android_vendor_twrp" path="vendor/twrp" remote="twrp-github" revision="android-11" clone-depth="1" />
             <project name="${{ github.repository }}" path="device/oneplus/OnePlusN100" remote="twrp-github" revision="${{ github.sha }}" clone-depth="1" />
