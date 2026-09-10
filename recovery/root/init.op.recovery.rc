@@ -44,6 +44,11 @@ service vendor.qti.vibrator-1-2 /vendor/bin/hw/vendor.qti.hardware.vibrator@1.2-
 on property:debug.symlink.vendor=1
     start qseecomd
     start vendor.boot-hal-1-0
+    # OOS 11 FBE authentication needs Qualcomm's Keymaster and Gatekeeper.
+    # Start them as soon as recovery's vendor symlink is valid instead of
+    # waiting for the vendor listener property and TWRP retry timeouts.
+    start keymaster-4-0
+    start gatekeeper-1-0
 
 on property:vendor.sys.listeners.registered=true
     start gatekeeper-1-0

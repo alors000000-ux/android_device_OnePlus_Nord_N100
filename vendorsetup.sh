@@ -18,3 +18,4 @@
 
 add_lunch_combo omni_OnePlusN100-userdebug
 add_lunch_combo omni_OnePlusN100-eng
+add_lunch_combo twrp_OnePlusN100-eng

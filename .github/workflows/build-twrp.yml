@@ -1,0 +1,114 @@
+name: Build BE2013 TWRP (Android 11 FBE)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: be2013-twrp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      EVIDENCE_REPOSITORY: alors000000-ux/oneplus-n100-billie2-nethunter-kernel
+      TARGET_EVIDENCE_DEPLOY_KEY: ${{ secrets.TWRP_TARGET_EVIDENCE_DEPLOY_KEY }}
+    steps:
+      - name: Check out device tree
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Require a read-only target-evidence deploy key
+        shell: bash
+        run: |
+          if [[ -z "${TARGET_EVIDENCE_DEPLOY_KEY}" ]]; then
+            echo "::error::TWRP_TARGET_EVIDENCE_DEPLOY_KEY is required. It must be a read-only deploy key for ${EVIDENCE_REPOSITORY}."
+            exit 2
+          fi
+
+      - name: Check out verified target boot evidence privately
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.EVIDENCE_REPOSITORY }}
+          ssh-key: ${{ secrets.TWRP_TARGET_EVIDENCE_DEPLOY_KEY }}
+          path: evidence
+          lfs: true
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Extract and verify target kernel and DTB
+        shell: bash
+        run: |
+          python3 scripts/extract_verified_boot.py \
+            evidence/device-evidence/inputs/target-boot.img \
+            prebuilt/target
+          install -D -m 0644 prebuilt/target/target-boot-layout.txt ci/target-boot-layout.txt
+
+      - name: Install repo tool
+        shell: bash
+        run: |
+          mkdir -p "$HOME/bin"
+          curl --fail --location --silent --show-error \
+            https://storage.googleapis.com/git-repo-downloads/repo \
+            --output "$HOME/bin/repo"
+          chmod 0755 "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Initialize the pinned Android-11 TWRP source
+        shell: bash
+        run: |
+          mkdir source
+          cd source
+          repo init --depth=1 \
+            --manifest-url https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git \
+            --manifest-branch twrp-11
+          mkdir -p .repo/local_manifests
+          cat > .repo/local_manifests/be2013.xml <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <manifest>
+            <remote name="github" fetch="https://github.com/" />
+            <remove-project name="platform/bootable/recovery" />
+            <project name="TeamWin/android_bootable_recovery" path="bootable/recovery" remote="github" revision="android-11" clone-depth="1" />
+            <project name="TeamWin/android_vendor_twrp" path="vendor/twrp" remote="github" revision="android-11" clone-depth="1" />
+            <project name="${{ github.repository }}" path="device/oneplus/OnePlusN100" remote="github" revision="${{ github.sha }}" clone-depth="1" />
+          </manifest>
+          EOF
+          repo sync -c --no-clone-bundle --no-tags -j2
+
+      - name: Build recovery-as-boot image
+        shell: bash
+        run: |
+          cp prebuilt/target/Image.gz source/device/oneplus/OnePlusN100/prebuilt/target/Image.gz
+          cp prebuilt/target/dtb.img source/device/oneplus/OnePlusN100/prebuilt/target/dtb.img
+          cd source
+          export ALLOW_MISSING_DEPENDENCIES=true
+          source build/envsetup.sh
+          lunch twrp_OnePlusN100-eng
+          mka bootimage -j"$(nproc)"
+
+      - name: Verify boot ABI and emit evidence
+        shell: bash
+        run: |
+          output=source/out/target/product/OnePlusN100/boot.img
+          test -s "$output"
+          cp "$output" ci/twrp-3.x-BE2013-11.0.5-BE83BA.img
+          python3 scripts/verify_twrp_boot.py \
+            ci/twrp-3.x-BE2013-11.0.5-BE83BA.img \
+            prebuilt/target/Image.gz \
+            prebuilt/target/dtb.img \
+            ci/boot-abi-verification.txt
+          sha256sum ci/twrp-3.x-BE2013-11.0.5-BE83BA.img > ci/SHA256SUMS
+
+      - name: Upload bootable TWRP candidate and verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: twrp-BE2013-android11-fbe-${{ github.run_number }}
+          path: ci/
+          if-no-files-found: error
+          retention-days: 14

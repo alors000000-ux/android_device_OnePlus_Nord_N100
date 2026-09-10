@@ -1,15 +1,22 @@
-# mount point       fstype    device                                                                flags
-/system             ext4      system                                                                flags=display="System";backup=1;logical;
-/system_image       emmc      system                                                                flags=display="System image";backup=1;flashimg=1;logical;
-/vendor             ext4      vendor                                                                flags=display="Vendor";backup=1;logical;
-/vendor_image       emmc      vendor                                                                flags=display="Vendor image";backup=1;flashimg=1;logical;
-/product            ext4      product                                                               flags=display="Product";backup=1;logical;
-/product_image      emmc      product                                                               flags=display="Product image";backup=1;flashimg=1;logical;
-/metadata           ext4      /dev/block/by-name/metadata                                           flags=display="Metadata";
-/data               f2fs      /dev/block/bootdevice/by-name/userdata                                flags=display="Data";
-/sdcard1            vfat      /dev/block/mmcblk1p1                                                  flags=display="Sdcard1";
-/boot               emmc      /dev/block/bootdevice/by-name/boot                                    flags=display="Boot";backup=1;flashimg=1;
-/misc               emmc      /dev/block/bootdevice/by-name/misc                                    flags=display="Misc";backup=1;flashimg=1;
-/op2                ext4      /dev/block/bootdevice/by-name/op2                                     flags=display="Op2";
-/persist            ext4      /dev/block/bootdevice/by-name/persist                                 flags=display="Persist";
-/persist_image      emmc      /dev/block/bootdevice/by-name/persist                                 flags=display="Persist image";backup=1;flashimg=1;
+# Android fstab v2 for OnePlus Nord N100 BE2013, OxygenOS 11.0.5.BE83BA.
+#
+# This is deliberately based on the live target vendor fstab. The prior
+# generated tree did not describe the metadata key directory, ICE FBE,
+# wrapped-key handling, UFS path, system_ext, or A/B logical partitions. That
+# made TWRP discover encryption through slow fallback attempts at startup.
+#
+# <src> <mnt_point> <type> <mnt_flags> <fs_mgr_flags>
+system      /system      ext4 ro,barrier=1,discard wait,slotselect,logical,first_stage_mount
+system_ext  /system_ext  ext4 ro,barrier=1,discard wait,slotselect,logical,first_stage_mount
+vendor      /vendor      ext4 ro,barrier=1,discard wait,slotselect,logical,first_stage_mount
+product     /product     ext4 ro,barrier=1,discard wait,slotselect,logical,first_stage_mount
+
+/dev/block/by-name/metadata /metadata ext4 noatime,nosuid,nodev,discard,sync wait,check,formattable,wrappedkey,first_stage_mount
+/dev/block/bootdevice/by-name/userdata /data f2fs noatime,nosuid,nodev,discard,reserve_root=32768,resgid=1065,fsync_mode=nobarrier,inlinecrypt latemount,wait,check,formattable,fileencryption=ice,quota,reservedsize=512M,wrappedkey,keydirectory=/metadata/vold/metadata_encryption,sysfs_path=/sys/devices/platform/soc/4804000.ufshc,checkpoint=fs
+
+/devices/platform/soc/4784000.sdhci/mmc_host* /storage/sdcard1 vfat nosuid,nodev wait,voldmanaged=sdcard1:auto
+/devices/platform/soc/*.ssusb/*.dwc3/xhci-hcd.*.auto* /storage/usbotg vfat nosuid,nodev wait,voldmanaged=usbotg:auto
+/dev/block/bootdevice/by-name/boot /boot emmc defaults defaults
+/dev/block/bootdevice/by-name/misc /misc emmc defaults defaults
+/dev/block/bootdevice/by-name/op2 /op2 ext4 noatime,nosuid,nodev,barrier=1 wait,check
+/dev/block/bootdevice/by-name/persist /persist ext4 noatime,nosuid,nodev,barrier=1 wait,check

@@ -17,4 +17,8 @@
 #
 
 PRODUCT_MAKEFILES := \
-     $(LOCAL_DIR)/omni_OnePlusN100.mk
+     $(LOCAL_DIR)/omni_OnePlusN100.mk \
+     $(LOCAL_DIR)/twrp_OnePlusN100.mk
+
+COMMON_LUNCH_CHOICES := \
+    twrp_OnePlusN100-eng

@@ -1,0 +1,7 @@
+[
+  {
+    "repository": "TeamWin/android_vendor_twrp",
+    "target_path": "vendor/twrp",
+    "branch": "android-11"
+  }
+]

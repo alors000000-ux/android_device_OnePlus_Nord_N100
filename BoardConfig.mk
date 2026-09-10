@@ -51,15 +51,27 @@ TARGET_COPY_OUT_VENDOR := vendor
 
 # A/B
 AB_OTA_UPDATER := true
+PRODUCT_USE_DYNAMIC_PARTITIONS := true
+BOARD_USES_METADATA_PARTITION := true
+# This device has no separate recovery partition. TWRP lives in a boot-image
+# ramdisk and must be built with `mka bootimage`, not `mka recoveryimage`.
+BOARD_USES_RECOVERY_AS_BOOT := true
+TARGET_NO_RECOVERY := true
+TW_HAS_NO_RECOVERY_PARTITION := true
 TW_INCLUDE_REPACKTOOLS := true
 
-# Kernel
+# Kernel and boot image
+#
+# The original fork's Image.gz, DTB and DTBO came from an older firmware and
+# must never be used for the BE2013_7_220331 target. The private GitHub Actions
+# workflow extracts these two inputs from the verified stock boot image before
+# the TWRP build. The stock DTBO remains in its separate partition and is not
+# included in the recovery boot image.
 BOARD_KERNEL_CMDLINE := androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 swiotlb=2048 loop.max_part=7 buildvariant=user
-TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/Image.gz
-TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/dtb.img
-BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img
-BOARD_INCLUDE_RECOVERY_DTBO := true
+TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/prebuilt/target/Image.gz
+TARGET_PREBUILT_DTB := $(DEVICE_PATH)/prebuilt/target/dtb.img
 BOARD_BOOTIMG_HEADER_VERSION := 2
+BOARD_BOOTIMAGE_PARTITION_SIZE := 100663296
 BOARD_KERNEL_BASE := 0x00000000
 BOARD_KERNEL_PAGESIZE := 4096
 BOARD_RAMDISK_OFFSET := 0x01000000
@@ -80,6 +92,19 @@ TARGET_BOARD_PLATFORM := bengal
 
 # Recovery
 TARGET_RECOVERY_PIXEL_FORMAT := RGBX_8888
+TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery.fstab
+RECOVERY_SDCARD_ON_DATA := true
+
+# Android 11 / OxygenOS 11 FBE on BE2013 uses ICE plus a wrapped key stored
+# under /metadata. These flags cause the Android-11 TWRP base to include the
+# FBE and Qualcomm decryption paths instead of probing /data via fallbacks.
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_CRYPTO_FBE := true
+TW_INCLUDE_FBE_METADATA_DECRYPT := true
+BOARD_USES_QCOM_FBE_DECRYPTION := true
+TW_PREPARE_DATA_MEDIA_EARLY := true
+TWRP_INCLUDE_LOGCAT := true
+TARGET_USES_LOGD := true
 
 # Hack: prevent anti rollback
 PLATFORM_SECURITY_PATCH := 2099-12-31
