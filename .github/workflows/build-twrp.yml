@@ -69,15 +69,26 @@ jobs:
             --manifest-url https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git \
             --manifest-branch twrp-11
           git -C .repo/manifests checkout --detach 48a1ac925fb112f09cfa6313932726b20125170d
-          repo sync -c --no-clone-bundle --no-tags -j2
-          git clone --depth=1 --branch android-11 \
-            https://github.com/TeamWin/android_bootable_recovery.git bootable/recovery
+          # The pinned manifest replaces AOSP recovery with the matching TeamWin tree below.
+          sed -i '\\|path="bootable/recovery"|d' .repo/manifests/default.xml
+          repo sync --no-manifest-update -c --no-clone-bundle --no-tags -j2
+          mkdir -p bootable/recovery
+          git -C bootable/recovery init
+          git -C bootable/recovery remote add origin \
+            https://github.com/TeamWin/android_bootable_recovery.git
+          git -C bootable/recovery fetch --depth=1 origin 8bd48201c3ed825a0acecc0e6dcf125449ab1ec2
           git -C bootable/recovery checkout --detach 8bd48201c3ed825a0acecc0e6dcf125449ab1ec2
-          git clone --depth=1 --branch android-11 \
-            https://github.com/TeamWin/android_vendor_twrp.git vendor/twrp
+          mkdir -p vendor/twrp
+          git -C vendor/twrp init
+          git -C vendor/twrp remote add origin \
+            https://github.com/TeamWin/android_vendor_twrp.git
+          git -C vendor/twrp fetch --depth=1 origin 8024590e5404e7811dafab7219034bd44038f064
           git -C vendor/twrp checkout --detach 8024590e5404e7811dafab7219034bd44038f064
-          git clone --depth=1 --branch "${{ github.ref_name }}" \
-            "https://github.com/${{ github.repository }}.git" device/oneplus/OnePlusN100
+          mkdir -p device/oneplus/OnePlusN100
+          git -C device/oneplus/OnePlusN100 init
+          git -C device/oneplus/OnePlusN100 remote add origin \
+            "https://github.com/${{ github.repository }}.git"
+          git -C device/oneplus/OnePlusN100 fetch --depth=1 origin "${{ github.sha }}"
           git -C device/oneplus/OnePlusN100 checkout --detach "${{ github.sha }}"
 
       - name: Build recovery-as-boot image
