@@ -19,12 +19,13 @@ recovery fstab. It did not describe the target's metadata partition,
 wrapped-key FBE configuration, UFS controller path, dynamic `system_ext`
 partition, or recovery-as-boot layout. It also declared no crypto build flags.
 
-This branch instead uses the Android-11 TeamWin base and includes FBE,
+This branch instead uses a pinned Android-11 TeamWin base and includes FBE,
 metadata-decryption and Qualcomm FBE support. Its fstab is derived from the
 target firmware's live vendor fstab. The recovery init starts Qualcomm QSEE,
 Keymaster and Gatekeeper as soon as the recovery vendor symlink is ready, so
 the FBE path is ready before TWRP requests the key rather than entering the
-legacy retry loop.
+legacy retry loop. A newer public billie2 TWRP tree was used as a configuration
+reference only; its old prebuilt firmware files are not used.
 
 The workflow extracts `Image.gz` and `dtb.img` only from a private, hash-pinned
 stock boot image. The prebuilt kernel and DTB left by the old public fork are
