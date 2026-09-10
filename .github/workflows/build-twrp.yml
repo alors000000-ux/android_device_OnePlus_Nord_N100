@@ -72,21 +72,14 @@ jobs:
             --manifest-url https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git \
             --manifest-branch twrp-11
           git -C .repo/manifests checkout --detach 48a1ac925fb112f09cfa6313932726b20125170d
-          # The pinned manifest replaces AOSP recovery with the matching TeamWin tree below.
-          sed -i '\|path="bootable/recovery"|d' .repo/manifests/default.xml
+          # This manifest removes AOSP recovery and adds TeamWin recovery itself.
+          sed -i 's#name="android_bootable_recovery" remote="TeamWin" revision="android-11"#name="android_bootable_recovery" remote="TeamWin" revision="8bd48201c3ed825a0acecc0e6dcf125449ab1ec2"#' \
+            .repo/manifests/twrp-extras.xml
+          sed -i 's#name="android_vendor_twrp" remote="TeamWin" revision="android-11"#name="android_vendor_twrp" remote="TeamWin" revision="8024590e5404e7811dafab7219034bd44038f064"#' \
+            .repo/manifests/twrp-extras.xml
           repo sync --no-manifest-update -c --no-clone-bundle --no-tags -j2
-          mkdir -p bootable/recovery
-          git -C bootable/recovery init
-          git -C bootable/recovery remote add origin \
-            https://github.com/TeamWin/android_bootable_recovery.git
-          git -C bootable/recovery fetch --depth=1 origin 8bd48201c3ed825a0acecc0e6dcf125449ab1ec2
-          git -C bootable/recovery checkout --detach 8bd48201c3ed825a0acecc0e6dcf125449ab1ec2
-          mkdir -p vendor/twrp
-          git -C vendor/twrp init
-          git -C vendor/twrp remote add origin \
-            https://github.com/TeamWin/android_vendor_twrp.git
-          git -C vendor/twrp fetch --depth=1 origin 8024590e5404e7811dafab7219034bd44038f064
-          git -C vendor/twrp checkout --detach 8024590e5404e7811dafab7219034bd44038f064
+          test "$(git -C bootable/recovery rev-parse HEAD)" = 8bd48201c3ed825a0acecc0e6dcf125449ab1ec2
+          test "$(git -C vendor/twrp rev-parse HEAD)" = 8024590e5404e7811dafab7219034bd44038f064
           mkdir -p device/oneplus/OnePlusN100
           git -C device/oneplus/OnePlusN100 init
           git -C device/oneplus/OnePlusN100 remote add origin \
@@ -111,6 +104,14 @@ jobs:
           output=source/out/target/product/OnePlusN100/boot.img
           test -s "$output"
           cp "$output" ci/twrp-3.x-BE2013-11.0.5-BE83BA.img
+          {
+            printf 'bootable/recovery '
+            git -C source/bootable/recovery rev-parse HEAD
+            printf 'vendor/twrp '
+            git -C source/vendor/twrp rev-parse HEAD
+            printf 'device/oneplus/OnePlusN100 '
+            git -C source/device/oneplus/OnePlusN100 rev-parse HEAD
+          } > ci/twrp-source-revisions.txt
           python3 scripts/verify_twrp_boot.py \
             ci/twrp-3.x-BE2013-11.0.5-BE83BA.img \
             prebuilt/target/Image.gz \
